@@ -11,7 +11,7 @@ async def render(
     text: str,
     markup: InlineKeyboardMarkup | None = None,
 ) -> None:
-    """Перерисовывает текущий экран вместо отправки нового сообщения    """
+    """Перерисовывает текущий экран вместо отправки нового сообщения"""
     await callback.answer()
     if not isinstance(callback.message, Message):
         return
