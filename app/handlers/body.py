@@ -4,10 +4,10 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 
-from app.callbacks import AmbiguityCB, NavCB, ResultCB, SensationCB, SensationsDoneCB, ZoneCB
+from app.callbacks import AmbiguityCB, NavCB, SensationCB, SensationsDoneCB, ZoneCB
 from app.content import texts
 from app.content.body import AMBIGUITY_QUESTIONS, SENSATIONS, ZONES_BY_KEY
-from app.handlers.emotions import meaning_view, results_view
+from app.handlers.emotions import results_view
 from app.keyboards.body import ambiguity_kb, sensations_kb, zones_kb
 from app.services.resolver import Resolution, resolve
 from app.states import BodyFlow
@@ -41,12 +41,28 @@ def _sensations_view(
     return text, sensations_kb(zone_key, selected)
 
 
+def _zones_view(selected: set[str]) -> tuple[str, InlineKeyboardMarkup]:
+    """Список зон тела. Если что-то уже отмечено — перечисляем набор целиком:
+    выйдя из зоны, человек иначе не видит, что успел выбрать."""
+    if not selected:
+        return texts.CHOOSE_ZONE, zones_kb(selected)
+
+    labels = [
+        lower_first(SENSATIONS[key].label)
+        for key in sorted(selected)
+        if key in SENSATIONS
+    ]
+    text = texts.CHOOSE_ZONE_MORE.format(selected=", ".join(labels))
+    return text, zones_kb(selected)
+
+
 @router.callback_query(NavCB.filter(F.to == "zones"))
 async def show_zones(callback: CallbackQuery, callback_data: NavCB, state: FSMContext) -> None:
     # keep=True — переход между зонами, отмеченное сохраняем.
     if not callback_data.keep:
         await _reset(state)
-    await render(callback, texts.CHOOSE_ZONE, zones_kb())
+    data = await state.get_data()
+    await render(callback, *_zones_view(set(data.get("selected", []))))
 
 
 @router.callback_query(ZoneCB.filter())
@@ -107,11 +123,6 @@ async def answer_ambiguity(
     await state.update_data(answers=answers)
 
     await _advance(callback, state, selected, answers)
-
-
-@router.callback_query(ResultCB.filter())
-async def help_for_result(callback: CallbackQuery, callback_data: ResultCB) -> None:
-    await render(callback, *meaning_view(callback_data.emotion))
 
 
 async def _advance(
