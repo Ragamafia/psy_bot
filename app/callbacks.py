@@ -10,7 +10,7 @@ from aiogram.filters.callback_data import CallbackData
 
 
 class NavCB(CallbackData, prefix="nav"):
-    # emotions | zones | final
+    # emotions | emotions_multi | zones | final
     to: str
     # Для зон тела: сохранить уже отмеченные ощущения (переход между зонами)
     # или начать выбор заново (вход из списка эмоций).
@@ -19,6 +19,16 @@ class NavCB(CallbackData, prefix="nav"):
 
 class EmotionCB(CallbackData, prefix="emo"):
     key: str
+
+
+class EmotionToggleCB(CallbackData, prefix="emotog"):
+    """Отметить/снять эмоцию, когда человек выбирает несколько сразу."""
+
+    key: str
+
+
+class EmotionsDoneCB(CallbackData, prefix="emodone"):
+    pass
 
 
 class ShadeCB(CallbackData, prefix="shade"):

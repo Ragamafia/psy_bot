@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup
 
 from app.callbacks import AmbiguityCB, NavCB, ResultCB, SensationCB, SensationsDoneCB, ZoneCB
 from app.content import texts
-from app.content.body import AMBIGUITY_QUESTIONS, ZONES_BY_KEY
-from app.content.emotions import EMOTIONS
-from app.handlers.emotions import meaning_view
-from app.keyboards.body import ambiguity_kb, results_kb, sensations_kb, zones_kb
-from app.keyboards.emotions import help_kb
+from app.content.body import AMBIGUITY_QUESTIONS, SENSATIONS, ZONES_BY_KEY
+from app.handlers.emotions import meaning_view, results_view
+from app.keyboards.body import ambiguity_kb, sensations_kb, zones_kb
 from app.services.resolver import Resolution, resolve
 from app.states import BodyFlow
-from app.utils import join_titles, lower_first, render
+from app.utils import lower_first, render
 
 router = Router(name="body")
 
@@ -21,6 +19,26 @@ router = Router(name="body")
 async def _reset(state: FSMContext) -> None:
     await state.set_state(BodyFlow.selecting)
     await state.update_data(selected=[], answers={}, zone=None)
+
+
+def _sensations_view(
+    zone_key: str, selected: set[str]
+) -> tuple[str, InlineKeyboardMarkup]:
+    """Экран выбора ощущений. Когда что-то уже отмечено — просим посмотреть
+    и другие зоны: по одному признаку эмоция определяется плохо."""
+    zone = ZONES_BY_KEY[zone_key]
+    if not selected:
+        text = texts.CHOOSE_SENSATIONS.format(zone=zone.title)
+    else:
+        labels = [
+            lower_first(SENSATIONS[key].label)
+            for key in sorted(selected)
+            if key in SENSATIONS
+        ]
+        text = texts.CHOOSE_SENSATIONS_MORE.format(
+            zone=zone.title, selected=", ".join(labels)
+        )
+    return text, sensations_kb(zone_key, selected)
 
 
 @router.callback_query(NavCB.filter(F.to == "zones"))
@@ -37,11 +55,9 @@ async def show_sensations(callback: CallbackQuery, callback_data: ZoneCB, state:
     await state.set_state(BodyFlow.selecting)
     await state.update_data(zone=callback_data.key)
 
-    zone = ZONES_BY_KEY[callback_data.key]
     await render(
         callback,
-        texts.CHOOSE_SENSATIONS.format(zone=zone.title),
-        sensations_kb(zone.key, set(data.get("selected", []))),
+        *_sensations_view(callback_data.key, set(data.get("selected", []))),
     )
 
 
@@ -62,11 +78,7 @@ async def toggle_sensation(
     selected.symmetric_difference_update({callback_data.key})
     await state.update_data(selected=sorted(selected))
 
-    await render(
-        callback,
-        texts.CHOOSE_SENSATIONS.format(zone=ZONES_BY_KEY[zone_key].title),
-        sensations_kb(zone_key, selected),
-    )
+    await render(callback, *_sensations_view(zone_key, selected))
 
 
 @router.callback_query(SensationsDoneCB.filter())
@@ -121,25 +133,10 @@ async def _advance(
 
 
 async def _show_results(callback: CallbackQuery, resolution: Resolution) -> None:
-    keys = resolution.emotions
-    if not keys:
+    if not resolution.emotions:
         await render(callback, texts.CHOOSE_ZONE, zones_kb())
         return
 
-    if len(keys) == 1:
-        emotion = EMOTIONS[keys[0]]
-        text = texts.RESULT_SINGLE.format(emotion=emotion.title, meaning=emotion.meaning)
-        await render(callback, text, help_kb(emotion.key))
-        return
-
-    titles = join_titles([f"<b>{EMOTIONS[key].title}</b>" for key in keys])
-    lines = [texts.RESULT_MANY_HEADER.format(emotions=titles), ""]
-    lines += [
-        f"▸ <b>{EMOTIONS[key].title}</b> — {lower_first(EMOTIONS[key].meaning)}"
-        for key in keys
-    ]
-    if resolution.truncated:
-        lines += ["", texts.RESULT_TRUNCATED]
-    lines += ["", texts.RESULT_MANY_FOOTER]
-
-    await render(callback, "\n".join(lines), results_kb(keys))
+    await render(
+        callback, *results_view(resolution.emotions, resolution.truncated)
+    )

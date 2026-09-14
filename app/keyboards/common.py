@@ -11,6 +11,14 @@ def to_emotions(text: str = "← К списку эмоций") -> InlineKeyboar
     return InlineKeyboardButton(text=text, callback_data=NavCB(to="emotions").pack())
 
 
+def to_multi(
+    text: str = "Я испытываю несколько эмоций сразу",
+) -> InlineKeyboardButton:
+    return InlineKeyboardButton(
+        text=text, callback_data=NavCB(to="emotions_multi").pack()
+    )
+
+
 def to_zones(
     text: str = "Затрудняюсь назвать эмоцию", keep: bool = False
 ) -> InlineKeyboardButton:
