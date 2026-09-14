@@ -5,17 +5,37 @@ from __future__ import annotations
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from app.callbacks import AmbiguityCB, ResultCB, SensationCB, SensationsDoneCB, ZoneCB
+from app.callbacks import (
+    AmbiguityCB,
+    MeaningCB,
+    SensationCB,
+    SensationsDoneCB,
+    ZoneCB,
+)
 from app.content.body import ZONES, ZONES_BY_KEY
 from app.content.emotions import EMOTIONS
 from app.keyboards.common import to_emotions, to_final, to_zones
 
 
-def zones_kb() -> InlineKeyboardMarkup:
+def _done_button(count: int) -> InlineKeyboardButton:
+    return InlineKeyboardButton(
+        text=f"Готово ({count})" if count else "Готово",
+        callback_data=SensationsDoneCB().pack(),
+    )
+
+
+def zones_kb(selected: set[str] = frozenset()) -> InlineKeyboardMarkup:
+    """Зоны с отметками: сколько ощущений уже выбрано в каждой. Иначе, выйдя
+    из зоны, человек теряет из виду весь набор."""
     builder = InlineKeyboardBuilder()
     for zone in ZONES:
-        builder.button(text=zone.title, callback_data=ZoneCB(key=zone.key))
+        count = sum(1 for s in zone.sensations if s.key in selected)
+        title = f"✅ {zone.title} · {count}" if count else zone.title
+        builder.button(text=title, callback_data=ZoneCB(key=zone.key))
     builder.adjust(1)
+    # Завершить выбор можно прямо отсюда, не заходя обратно в зону.
+    if selected:
+        builder.row(_done_button(len(selected)))
     builder.row(to_emotions())
     return builder.as_markup()
 
@@ -33,10 +53,7 @@ def sensations_kb(zone_key: str, selected: set[str]) -> InlineKeyboardMarkup:
     builder.adjust(1)
     builder.row(
         to_zones("← Другая зона тела", keep=True),
-        InlineKeyboardButton(
-            text=f"Готово ({len(selected)})" if selected else "Готово",
-            callback_data=SensationsDoneCB().pack(),
-        ),
+        _done_button(len(selected)),
     )
     return builder.as_markup()
 
@@ -59,7 +76,7 @@ def results_kb(emotion_keys: list[str]) -> InlineKeyboardMarkup:
     for key in emotion_keys:
         builder.button(
             text=f"Помочь {EMOTIONS[key].instrumental}",
-            callback_data=ResultCB(emotion=key),
+            callback_data=MeaningCB(emotion=key),
         )
     builder.adjust(1)
     builder.row(to_final())

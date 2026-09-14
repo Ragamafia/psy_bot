@@ -10,7 +10,7 @@ from app.callbacks import (
     EmotionsDoneCB,
     EmotionToggleCB,
     HelpCB,
-    ShadeCB,
+    MeaningCB,
 )
 from app.content.emotions import EMOTION_ORDER, EMOTIONS, HELP_BLOCK_TITLES
 from app.keyboards.common import to_emotions, to_final, to_multi, to_zones
@@ -55,23 +55,39 @@ def shades_kb(emotion_key: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for index, shade in enumerate(shades):
         builder.button(
-            text=shade.title, callback_data=ShadeCB(emotion=emotion_key, index=index)
+            text=shade.title, callback_data=MeaningCB(emotion=emotion_key, shade=index)
         )
     builder.adjust(1 if any(len(s.title) > _WIDE_SHADE for s in shades) else 2)
     builder.row(to_emotions())
     return builder.as_markup()
 
 
-def help_kb(emotion_key: str) -> InlineKeyboardMarkup:
-    """Кнопки самопомощи — по фактически имеющемуся контенту: у грусти,
+def help_kb(emotion_key: str, shade_index: int | None = None) -> InlineKeyboardMarkup:
+    """Список способов помощи — по фактически имеющемуся контенту: у грусти,
     радости и отвращения блока «Чтобы не сорваться» в таблице нет."""
     builder = InlineKeyboardBuilder()
     for block in EMOTIONS[emotion_key].help_blocks():
         builder.button(
             text=HELP_BLOCK_TITLES[block],
-            callback_data=HelpCB(emotion=emotion_key, block=block),
+            callback_data=HelpCB(emotion=emotion_key, block=block, shade=shade_index),
         )
     builder.adjust(1)
     builder.row(to_final())
     builder.row(to_emotions())
+    return builder.as_markup()
+
+
+def help_block_kb(
+    emotion_key: str, shade_index: int | None = None
+) -> InlineKeyboardMarkup:
+    """Экран одного способа помощи. Списка способов здесь нет намеренно:
+    когда кнопки остаются на месте, подмена текста над ними незаметна."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="← Назад к способам помощи",
+            callback_data=MeaningCB(emotion=emotion_key, shade=shade_index).pack(),
+        )
+    )
+    builder.row(to_final())
     return builder.as_markup()
