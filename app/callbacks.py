@@ -31,14 +31,23 @@ class EmotionsDoneCB(CallbackData, prefix="emodone"):
     pass
 
 
-class ShadeCB(CallbackData, prefix="shade"):
+class MeaningCB(CallbackData, prefix="mean"):
+    """Экран «что показывает эмоция» со списком способов помощи.
+
+    Сюда ведут три дороги: выбор оттенка, эмоция, определённая по телу,
+    и кнопка «Назад» из конкретного способа помощи.
+    """
+
     emotion: str
-    index: int
+    # Индекс оттенка или None, если эмоцию выбрали без оттенка.
+    shade: int | None = None
 
 
 class HelpCB(CallbackData, prefix="help"):
     emotion: str
     block: str
+    # Оттенок, с которого пришли, — чтобы «Назад» вернуло на тот же экран.
+    shade: int | None = None
 
 
 class ZoneCB(CallbackData, prefix="zone"):
@@ -56,10 +65,3 @@ class SensationsDoneCB(CallbackData, prefix="sdone"):
 class AmbiguityCB(CallbackData, prefix="amb"):
     pair: str
     choice: str
-
-
-class ResultCB(CallbackData, prefix="res"):
-    """Эмоция, определённая по телу: сразу к значению и способам помощи,
-    экран оттенков в этой ветке не нужен."""
-
-    emotion: str

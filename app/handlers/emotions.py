@@ -9,13 +9,18 @@ from app.callbacks import (
     EmotionsDoneCB,
     EmotionToggleCB,
     HelpCB,
+    MeaningCB,
     NavCB,
-    ShadeCB,
 )
 from app.content import texts
 from app.content.emotions import EMOTION_ORDER, EMOTIONS, HELP_BLOCK_TITLES
 from app.keyboards.body import results_kb
-from app.keyboards.emotions import emotions_multi_kb, help_kb, shades_kb
+from app.keyboards.emotions import (
+    emotions_multi_kb,
+    help_block_kb,
+    help_kb,
+    shades_kb,
+)
 from app.states import EmotionFlow
 from app.utils import join_titles, lower_first, render
 
@@ -37,7 +42,7 @@ def meaning_view(emotion_key: str, shade_index: int | None = None) -> tuple[str,
         note=shade.note,
         meaning=emotion.meaning,
     )
-    return text, help_kb(emotion_key)
+    return text, help_kb(emotion_key, shade_index)
 
 
 def results_view(
@@ -78,9 +83,10 @@ async def choose_emotion(callback: CallbackQuery, callback_data: EmotionCB) -> N
     )
 
 
-@router.callback_query(ShadeCB.filter())
-async def choose_shade(callback: CallbackQuery, callback_data: ShadeCB) -> None:
-    await render(callback, *meaning_view(callback_data.emotion, callback_data.index))
+@router.callback_query(MeaningCB.filter())
+async def show_meaning(callback: CallbackQuery, callback_data: MeaningCB) -> None:
+    """Выбран оттенок, эмоция определена по телу или нажато «Назад»."""
+    await render(callback, *meaning_view(callback_data.emotion, callback_data.shade))
 
 
 @router.callback_query(NavCB.filter(F.to == "emotions_multi"))
@@ -130,5 +136,5 @@ async def show_help_block(callback: CallbackQuery, callback_data: HelpCB) -> Non
         block=HELP_BLOCK_TITLES[callback_data.block],
         text=emotion.help[callback_data.block],
     )
-    # Клавиатура та же — можно сразу перейти к другому способу.
-    await render(callback, text, help_kb(emotion.key))
+    # Списка способов здесь нет: вернуться к нему можно кнопкой «Назад».
+    await render(callback, text, help_block_kb(emotion.key, callback_data.shade))
