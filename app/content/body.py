@@ -24,6 +24,10 @@ class Zone:
     sensations: tuple[Sensation, ...]
 
 
+# У зависти в таблице семь телесных ощущений, но пять из них дословно повторяют
+# ощущения других эмоций (сердцебиение, жар, напряжение челюсти, сбившееся дыхание,
+# дискомфорт в животе). Добавлены только два, которые ни с чем не пересекаются:
+# иначе половина списка стала бы спорной и человек утонул бы в уточняющих вопросах.
 ZONES: tuple[Zone, ...] = (
     Zone(
         key="head",
@@ -54,6 +58,7 @@ ZONES: tuple[Zone, ...] = (
             Sensation("squeal", "Визг радости", ("joy",)),
             Sensation("laughter", "Смех", ("joy",)),
             Sensation("throat_lump", "Ком в горле", ("resentment",)),
+            Sensation("chest_heavy", "Сжатие и тяжесть в груди", ("envy",)),
         ),
     ),
     Zone(
@@ -113,6 +118,7 @@ ZONES: tuple[Zone, ...] = (
             Sensation("fussiness", "Суетливость", ("anxiety",)),
             Sensation("worry", "Волнение", ("anxiety",)),
             Sensation("unease", "Беспокойство", ("anxiety",)),
+            Sensation("cold_numb", "Холод, онемение", ("envy",)),
         ),
     ),
     Zone(
