@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from app.callbacks import EmotionCB, HelpCB, ShadeCB
+from app.callbacks import (
+    EmotionCB,
+    EmotionsDoneCB,
+    EmotionToggleCB,
+    HelpCB,
+    ShadeCB,
+)
 from app.content.emotions import EMOTION_ORDER, EMOTIONS, HELP_BLOCK_TITLES
-from app.keyboards.common import to_emotions, to_final, to_zones
+from app.keyboards.common import to_emotions, to_final, to_multi, to_zones
+
+# Длинные подписи в два столбца переносятся на две строки и выглядят рвано —
+# такие оттенки ставим по одному в ряд.
+_WIDE_SHADE = 16
 
 
 def emotions_kb() -> InlineKeyboardMarkup:
@@ -15,15 +25,39 @@ def emotions_kb() -> InlineKeyboardMarkup:
     for key in EMOTION_ORDER:
         builder.button(text=EMOTIONS[key].title, callback_data=EmotionCB(key=key))
     builder.adjust(2)
+    builder.row(to_multi())
     builder.row(to_zones())
     return builder.as_markup()
 
 
-def shades_kb(emotion_key: str) -> InlineKeyboardMarkup:
+def emotions_multi_kb(chosen: set[str]) -> InlineKeyboardMarkup:
+    """Тот же список эмоций, но с галочками: повторное нажатие снимает выбор."""
     builder = InlineKeyboardBuilder()
-    for index, shade in enumerate(EMOTIONS[emotion_key].shades):
-        builder.button(text=shade, callback_data=ShadeCB(emotion=emotion_key, index=index))
+    for key in EMOTION_ORDER:
+        mark = "✅ " if key in chosen else ""
+        builder.button(
+            text=f"{mark}{EMOTIONS[key].title}",
+            callback_data=EmotionToggleCB(key=key),
+        )
     builder.adjust(2)
+    builder.row(
+        InlineKeyboardButton(
+            text=f"Готово ({len(chosen)})" if chosen else "Готово",
+            callback_data=EmotionsDoneCB().pack(),
+        )
+    )
+    builder.row(to_emotions("← Выбрать одну эмоцию"))
+    return builder.as_markup()
+
+
+def shades_kb(emotion_key: str) -> InlineKeyboardMarkup:
+    shades = EMOTIONS[emotion_key].shades
+    builder = InlineKeyboardBuilder()
+    for index, shade in enumerate(shades):
+        builder.button(
+            text=shade.title, callback_data=ShadeCB(emotion=emotion_key, index=index)
+        )
+    builder.adjust(1 if any(len(s.title) > _WIDE_SHADE for s in shades) else 2)
     builder.row(to_emotions())
     return builder.as_markup()
 
