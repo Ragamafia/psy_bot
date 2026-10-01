@@ -9,6 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # Картинки эмоций лежат по ключу эмоции: anger.jpg, fear.jpg…
 EMOTION_IMAGES_DIR = PROJECT_ROOT / "static" / "emotions"
+# Фон и шрифт карточек «как себе помочь»: текст техники рисуется поверх фона.
+HELP_BACKGROUND = PROJECT_ROOT / "static" / "background.jpg"
+HELP_FONT = PROJECT_ROOT / "static" / "fonts" / "Lora.ttf"
 
 BASE_SETTINGS_CONFIG = SettingsConfigDict(
     extra="ignore",
