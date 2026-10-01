@@ -22,7 +22,8 @@ from app.keyboards.emotions import (
     help_kb,
     shades_kb,
 )
-from app.utils import join_titles, lower_first, render, render_photo
+from app.services.card import help_card
+from app.utils import join_titles, lower_first, render, render_card, render_photo
 
 router = Router(name="emotions")
 
@@ -133,10 +134,22 @@ async def finish_emotions(callback: CallbackQuery, state: FSMContext) -> None:
 @router.callback_query(HelpCB.filter())
 async def show_help_block(callback: CallbackQuery, callback_data: HelpCB) -> None:
     emotion = EMOTIONS[callback_data.emotion]
-    text = texts.HELP_BLOCK.format(
-        emotion=emotion.title,
-        block=HELP_BLOCK_TITLES[callback_data.block],
-        text=emotion.help[callback_data.block],
-    )
+    block = HELP_BLOCK_TITLES[callback_data.block]
+    technique = emotion.help[callback_data.block]
+
+    parts = [emotion.title]
+    if callback_data.shade is not None:
+        parts.append(lower_first(emotion.shades[callback_data.shade].title))
+    # Способ помощи уже написан на карточке — в подписи только эмоция и оттенок.
+    header = " · ".join(parts)
+
     # Списка способов здесь нет: вернуться к нему можно кнопкой «Назад».
-    await render(callback, text, help_block_kb(emotion.key, callback_data.shade))
+    await render_card(
+        callback,
+        # Картинка от оттенка не зависит — оттенок только в подписи.
+        key=f"help_{emotion.key}_{callback_data.block}",
+        draw=lambda: help_card(block, technique),
+        caption=texts.HELP_CARD.format(header=header),
+        fallback=texts.HELP_BLOCK.format(header=f"{header} · {block}", text=technique),
+        markup=help_block_kb(emotion.key, callback_data.shade),
+    )
