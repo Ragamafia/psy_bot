@@ -10,14 +10,12 @@ from app.content.body import AMBIGUITY_QUESTIONS, SENSATIONS, ZONES_BY_KEY
 from app.handlers.emotions import results_view
 from app.keyboards.body import ambiguity_kb, sensations_kb, zones_kb
 from app.services.resolver import Resolution, resolve
-from app.states import BodyFlow
 from app.utils import lower_first, render
 
 router = Router(name="body")
 
 
 async def _reset(state: FSMContext) -> None:
-    await state.set_state(BodyFlow.selecting)
     await state.update_data(selected=[], answers={}, zone=None)
 
 
@@ -68,7 +66,6 @@ async def show_zones(callback: CallbackQuery, callback_data: NavCB, state: FSMCo
 @router.callback_query(ZoneCB.filter())
 async def show_sensations(callback: CallbackQuery, callback_data: ZoneCB, state: FSMContext) -> None:
     data = await state.get_data()
-    await state.set_state(BodyFlow.selecting)
     await state.update_data(zone=callback_data.key)
 
     await render(
@@ -136,7 +133,6 @@ async def _advance(
 
     if resolution.needs_question:
         pair = resolution.pending[0]
-        await state.set_state(BodyFlow.disambiguating)
         await render(callback, AMBIGUITY_QUESTIONS[pair], ambiguity_kb(pair))
         return
 

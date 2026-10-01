@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Картинки эмоций лежат по ключу эмоции: anger.jpg, fear.jpg…
+EMOTION_IMAGES_DIR = PROJECT_ROOT / "static" / "emotions"
 
 BASE_SETTINGS_CONFIG = SettingsConfigDict(
     extra="ignore",
@@ -24,6 +29,12 @@ class PsychologistSettings(BaseSettings):
     tg_username: str
     phone: str
     city: str
+    # Относительный путь считается от корня проекта, а не от папки запуска.
+    photo: Path = Path("static/nas.jpg")
+
+    @property
+    def photo_path(self) -> Path:
+        return self.photo if self.photo.is_absolute() else PROJECT_ROOT / self.photo
 
     @property
     def tg_link(self) -> str:

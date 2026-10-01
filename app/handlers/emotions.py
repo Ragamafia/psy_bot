@@ -12,6 +12,7 @@ from app.callbacks import (
     MeaningCB,
     NavCB,
 )
+from app.config import EMOTION_IMAGES_DIR
 from app.content import texts
 from app.content.emotions import EMOTION_ORDER, EMOTIONS, HELP_BLOCK_TITLES
 from app.keyboards.body import results_kb
@@ -21,8 +22,7 @@ from app.keyboards.emotions import (
     help_kb,
     shades_kb,
 )
-from app.states import EmotionFlow
-from app.utils import join_titles, lower_first, render
+from app.utils import join_titles, lower_first, render, render_photo
 
 router = Router(name="emotions")
 
@@ -68,19 +68,22 @@ def results_view(
     return "\n".join(lines), results_kb(emotion_keys)
 
 
+async def open_emotion(
+    callback: CallbackQuery, emotion_key: str, with_image: bool = False
+) -> None:
+    emotion = EMOTIONS[emotion_key]
+    text =texts.CHOOSE_SHADE.format(emotion=emotion.title)
+    markup = shades_kb(emotion.key)
+    if with_image:
+        await render_photo(callback, EMOTION_IMAGES_DIR / f"{emotion.key}.jpg", text, markup)
+    else:
+        await render(callback, text, markup)
+
+
 @router.callback_query(EmotionCB.filter())
 async def choose_emotion(callback: CallbackQuery, callback_data: EmotionCB) -> None:
-    emotion = EMOTIONS[callback_data.key]
-
-    if not emotion.shades:
-        await render(callback, *meaning_view(emotion.key))
-        return
-
-    await render(
-        callback,
-        texts.CHOOSE_SHADE.format(emotion=emotion.title),
-        shades_kb(emotion.key),
-    )
+    """Эмоция выбрана в главном меню — только здесь показываем её картинку."""
+    await open_emotion(callback, callback_data.key, with_image=True)
 
 
 @router.callback_query(MeaningCB.filter())
@@ -91,7 +94,6 @@ async def show_meaning(callback: CallbackQuery, callback_data: MeaningCB) -> Non
 
 @router.callback_query(NavCB.filter(F.to == "emotions_multi"))
 async def show_emotions_multi(callback: CallbackQuery, state: FSMContext) -> None:
-    await state.set_state(EmotionFlow.choosing_many)
     await state.update_data(chosen=[])
     await render(callback, texts.CHOOSE_EMOTIONS_MULTI, emotions_multi_kb(set()))
 
@@ -121,7 +123,7 @@ async def finish_emotions(callback: CallbackQuery, state: FSMContext) -> None:
     # Одна эмоция — это обычный выбор, ведём через оттенки как из общего списка.
     if len(chosen) == 1:
         await state.clear()
-        await choose_emotion(callback, EmotionCB(key=chosen[0]))
+        await open_emotion(callback, chosen[0])
         return
 
     await state.clear()
