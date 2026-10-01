@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -50,7 +51,6 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    try:
+    # Ctrl+C — штатная остановка, traceback в консоли не нужен.
+    with suppress(KeyboardInterrupt, SystemExit):
         asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("STOP")
