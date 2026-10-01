@@ -94,9 +94,8 @@ RESULT_TRUNCATED = (
 
 def final(psy: PsychologistSettings) -> str:
     return (
-        "Если хочется разобраться глубже и не в одиночку — можно прийти на сеанс.\n\n"
-        f"Психолог: <b>{psy.name}</b>\n"
-        f"Написать: {psy.tg_username}\n"
-        f"Телефон: {psy.phone}\n"
-        f"{psy.city}\n\n" + DISCLAIMER
+        f"Психолог <b>{psy.name}</b>\n"
+        f"{psy.city}\n"
+        f"{psy.tg_username}\n"
+        f"Телефон: {psy.phone}\n\n" + DISCLAIMER
     )

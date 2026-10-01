@@ -33,7 +33,7 @@ class Emotion:
     title: str
     meaning: str
     help: dict[str, str]
-    shades: tuple[Shade, ...] = ()
+    shades: tuple[Shade, ...]
     # Творительный падеж с предлогом — для кнопки «Помочь со злостью».
     instrumental: str = ""
 

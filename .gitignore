@@ -25,11 +25,10 @@ share/python-wheels/
 
 .venv/
 venv/
+
 ENV/
 
 .env
-.env.*
-
 env/.env
 
 .idea/

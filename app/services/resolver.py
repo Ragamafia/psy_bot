@@ -27,9 +27,8 @@ class Resolution:
         return bool(self.pending)
 
 
-def resolve(selected: list[str], answers: dict[str, str] | None = None) -> Resolution:
+def resolve(selected: list[str], answers: dict[str, str]) -> Resolution:
     """Считает голоса эмоций по отмеченным ощущениям"""
-    answers = answers or {}
     votes: Counter[str] = Counter()
     ambiguous = []
 
