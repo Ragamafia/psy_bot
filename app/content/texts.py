@@ -71,10 +71,15 @@ MEANING_WITH_SHADE_NOTE = (
     "Выберите, как себе помочь."
 )
 
-HELP_BLOCK = (
-    "<b>{emotion} · {block}</b>\n\n{text}\n\n"
+HELP_HINT = (
     "<i>Лучше использовать несколько подходов — вернитесь и выберите ещё один.</i>"
 )
+
+# Подпись под карточкой: сама техника нарисована на картинке.
+HELP_CARD = "<b>{header}</b>\n\n" + HELP_HINT
+
+# Та же техника текстом — если карточку нарисовать не удалось.
+HELP_BLOCK = "<b>{header}</b>\n\n{text}\n\n" + HELP_HINT
 
 RESULT_SINGLE = (
     "Похоже, вы испытываете <b>{emotion}</b>.\n\n{meaning}\n\nВыберите, как себе помочь."
