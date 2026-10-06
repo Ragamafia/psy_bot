@@ -66,15 +66,41 @@ async def render_card(
 ) -> None:
     """Экран с нарисованной картинкой. Рисуем только до первой отправки,
     дальше шлём по file_id. Не нарисовалась — показываем fallback текстом."""
-    photo: str | BufferedInputFile | None = _photo_ids.get(key)
+    photo = await _card_photo(key, draw)
     if photo is None:
-        # Pillow работает синхронно — уводим из цикла событий.
-        image = await asyncio.to_thread(draw)
-        if image is None:
-            await render(callback, fallback, markup)
-            return
-        photo = BufferedInputFile(image, filename=f"{key}.jpg")
+        await render(callback, fallback, markup)
+        return
     await _send_photo(callback, key, photo, caption, markup)
+
+
+async def answer_card(
+    message: Message,
+    key: str,
+    draw: Callable[[], bytes | None],
+    caption: str,
+    fallback: str,
+    markup: InlineKeyboardMarkup | None = None,
+) -> None:
+    """Нарисованная картинка новым сообщением — в ответ на команду, а не на кнопку."""
+    photo = await _card_photo(key, draw)
+    if photo is None:
+        await message.answer(fallback, reply_markup=markup)
+        return
+    sent = await message.answer_photo(photo, caption=caption, reply_markup=markup)
+    if sent.photo:
+        _photo_ids[key] = sent.photo[-1].file_id
+
+
+async def _card_photo(key: str, draw: Callable[[], bytes | None]) -> str | BufferedInputFile | None:
+    """file_id уже отправленной карточки или свежий рисунок. None — не нарисовалась."""
+    photo = _photo_ids.get(key)
+    if photo is not None:
+        return photo
+    # Pillow работает синхронно — уводим из цикла событий.
+    image = await asyncio.to_thread(draw)
+    if image is None:
+        return None
+    return BufferedInputFile(image, filename=f"{key}.jpg")
 
 
 async def _send_photo(

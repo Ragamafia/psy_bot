@@ -9,7 +9,8 @@ from app.callbacks import NavCB
 from app.content import texts
 from app.keyboards.emotions import emotions_kb
 from app.logger import logger
-from app.utils import render, user_label
+from app.services.card import start_card
+from app.utils import answer_card, render, user_label
 
 router = Router(name="start")
 
@@ -18,7 +19,16 @@ router = Router(name="start")
 async def cmd_start(message: Message, state: FSMContext) -> None:
     logger.info(f"START: {user_label(message.from_user)}")
     await state.clear()
-    await message.answer(texts.START, reply_markup=emotions_kb())
+    await answer_card(
+        message,
+        key="start",
+        draw=lambda: start_card(
+            texts.START_CARD_TITLE, texts.START_CARD_PARAGRAPHS, texts.START_CARD_ACCENT
+        ),
+        caption=texts.DISCLAIMER,
+        fallback=texts.START,
+        markup=emotions_kb(),
+    )
 
 
 @router.callback_query(NavCB.filter(F.to == "emotions"))
