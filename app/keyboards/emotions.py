@@ -27,6 +27,7 @@ def emotions_kb() -> InlineKeyboardMarkup:
     builder.adjust(2)
     builder.row(to_multi())
     builder.row(to_zones())
+    builder.row(to_final("Записаться на прием"))
     return builder.as_markup()
 
 
