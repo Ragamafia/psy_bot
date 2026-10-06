@@ -1,4 +1,4 @@
-"""Карточка «как себе помочь»: заголовок способа и текст техники на фоне"""
+"""Карточки на фоне: «как себе помочь» (способ и техника) и приветствие"""
 
 from __future__ import annotations
 
@@ -23,6 +23,8 @@ _MAX_SIZE = 84
 _MIN_SIZE = 30
 _TITLE_LEADING = 1.2
 _TEXT_LEADING = 1.35
+# Пустое место между абзацами — в долях кегля.
+_PARAGRAPH_GAP = 0.6
 # Отступы вокруг черты под заголовком.
 _RULE_GAP = 20
 _RULE_AFTER = 50
@@ -31,6 +33,19 @@ _RULE_WIDTH = 120
 
 def help_card(title: str, text: str) -> bytes | None:
     """JPEG карточки. None — нет фона или шрифта: тогда техника показывается текстом."""
+    return _card(title, [(text, _TEXT_COLOR, _TEXT_WEIGHT)])
+
+
+def start_card(title: str, paragraphs: list[str], accent: str) -> bytes | None:
+    """Приветствие: абзацы обычным текстом, призыв выбрать эмоцию — цветом заголовка.
+    None — нет фона или шрифта: тогда приветствие показывается текстом."""
+    blocks = [(paragraph, _TEXT_COLOR, _TEXT_WEIGHT) for paragraph in paragraphs]
+    blocks.append((accent, _TITLE_COLOR, _TITLE_WEIGHT))
+    return _card(title, blocks)
+
+
+def _card(title: str, blocks: list[tuple[str, tuple[int, int, int], int]]) -> bytes | None:
+    """Заголовок, черта под ним и блоки текста (текст, цвет, толщина) одним кеглем."""
     for path in (HELP_BACKGROUND, HELP_FONT):
         if not path.is_file():
             logger.warning(f"Файл карточки не найден: {path}")
@@ -44,15 +59,21 @@ def help_card(title: str, text: str) -> bytes | None:
     title_font = _font(_TITLE_SIZE, _TITLE_WEIGHT)
     title_lines = _wrap(draw, title, title_font, width)
     for size in range(_MAX_SIZE, _MIN_SIZE - 1, -2):
-        text_font = _font(size, _TEXT_WEIGHT)
-        text_lines = _wrap(draw, text, text_font, width)
+        laid_out = []
+        for text, color, weight in blocks:
+            font = _font(size, weight)
+            laid_out.append((_wrap(draw, text, font, width), font, color))
+        gap = size * _PARAGRAPH_GAP
         height = (
             len(title_lines) * title_font.size * _TITLE_LEADING
             + _RULE_GAP + _RULE_AFTER
-            + len(text_lines) * text_font.size * _TEXT_LEADING
+            + sum(len(lines) for lines, _, _ in laid_out) * size * _TEXT_LEADING
+            + (len(laid_out) - 1) * gap
         )
         # Длинное слово («Последовательно») само по себе может не влезть в ширину.
-        widest = max(draw.textlength(line, font=text_font) for line in text_lines)
+        widest = max(
+            draw.textlength(line, font=font) for lines, font, _ in laid_out for line in lines
+        )
         if height <= y1 - y0 and widest <= width:
             break
 
@@ -63,9 +84,11 @@ def help_card(title: str, text: str) -> bytes | None:
     y += _RULE_GAP
     draw.line((x0, y, x0 + _RULE_WIDTH, y), fill=_TITLE_COLOR, width=3)
     y += _RULE_AFTER
-    for line in text_lines:
-        draw.text((x0, y), line, font=text_font, fill=_TEXT_COLOR)
-        y += text_font.size * _TEXT_LEADING
+    for lines, font, color in laid_out:
+        for line in lines:
+            draw.text((x0, y), line, font=font, fill=color)
+            y += size * _TEXT_LEADING
+        y += gap
 
     buffer = BytesIO()
     image.save(buffer, format="JPEG", quality=90)
