@@ -44,10 +44,18 @@ class PsychologistSettings(BaseSettings):
         return f"https://t.me/{self.tg_username.lstrip('@')}"
 
 
+class NotifySettings(BaseSettings):
+    model_config = SettingsConfigDict(**BASE_SETTINGS_CONFIG, env_prefix="NOTIFY_")
+
+    # Кому слать уведомления о действиях пользователей. В .env — JSON-список: [111,222]
+    ids: list[int] = []
+
+
 class Settings:
     def __init__(self) -> None:
         self.bot = BotSettings()
         self.psy = PsychologistSettings()
+        self.notify = NotifySettings()
 
 
 @lru_cache
