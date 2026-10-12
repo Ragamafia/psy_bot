@@ -10,6 +10,7 @@ from app.content import texts
 from app.keyboards.emotions import emotions_kb
 from app.logger import logger
 from app.services.card import start_card
+from app.services.notify import notify, user_mention
 from app.utils import answer_card, render, user_label
 
 router = Router(name="start")
@@ -29,6 +30,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
         fallback=texts.START,
         markup=emotions_kb(),
     )
+    await notify(message.bot, f"🟢 Пользователь {user_mention(message.from_user)} запустил бота")
 
 
 @router.callback_query(NavCB.filter(F.to == "emotions"))
